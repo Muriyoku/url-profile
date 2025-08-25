@@ -9,7 +9,7 @@ struct UrlProfile {
 }
 
 struct UrlPocket {
-    urls: HashMap<String, Vec<UrlProfile>>
+    urls: HashMap<String, HashMap<String, UrlProfile>>
 }
 
 impl UrlProfile {
@@ -28,7 +28,7 @@ fn main() {
         let mut pocket_name: String = String::new();
         let mut action: String = String::new();
 
-        println!("=> Type some of these commands: add, exit or show-all");
+        println!("=> Type some of these commands: add, exit, show-all or get-url");
 
         io::stdin().read_line(&mut action).expect("Invalid Input");
         
@@ -68,18 +68,44 @@ fn main() {
             url.domain = domain.trim().to_string();
             url.path = path.trim().to_string();
     
-            pocket.urls.entry(pocket_name.trim().to_string()).or_default().push(url);
+            pocket.urls.entry(pocket_name.trim().to_string())
+            .or_default()
+            .entry(domain.trim().to_string())
+            .or_insert_with(|| url);
 
             continue;
         };
 
         if action.trim() == "show-all" {
-            for (_k, p) in &pocket.urls {
-                for u in p {
-                    u.show_profile();
+            for (_p_key, p_value) in &pocket.urls {
+                for (_u_key, u_value) in p_value {
+                    u_value.show_profile();
                 };
             };
         };
+
+        if action.trim() == "get-url" {
+            let mut pocket_target: String = String::new();
+            let mut url_target: String = String::new();
+
+            println!("=> Please, type the pocket name");
+            io::stdin().read_line(&mut pocket_target).expect("Invalid Input");
+
+            println!("=> Please, type the url domain name");
+            io::stdin().read_line(&mut url_target).expect("Invalid Input");
+
+            let pocket_op = pocket.urls.get(pocket_target.trim());
+
+            match pocket_op {
+                Some(url) => {
+                    match url.get(url_target.trim()) {
+                        Some(profile) => profile.show_profile(),
+                        None => panic!("The profile does not exists"),
+                    }
+                },
+                None => panic!("The pocket does not exists"),
+            }
+        }
 
         continue;
     };
